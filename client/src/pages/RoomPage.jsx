@@ -25,7 +25,8 @@ export default function RoomPage() {
 
   const [copied, setCopied] = useState(false);
   const hostId = room?.host?._id || room?.host;
-  const isHost = hostId && user && hostId.toString() === user.id.toString();
+  const userId = user?._id || user?.id;
+  const isHost = hostId && userId && hostId.toString() === userId.toString();
 
   // Connect socket and register to room
   useEffect(() => {

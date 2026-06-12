@@ -8,7 +8,8 @@ export default function YouTubePlayer() {
   const { user } = useAuth();
   
   const hostId = room?.host?._id || room?.host;
-  const isHost = hostId && user && hostId.toString() === user.id.toString();
+  const userId = user?._id || user?.id;
+  const isHost = hostId && userId && hostId.toString() === userId.toString();
 
   const playerRef = useRef(null);
   const containerId = 'youtube-iframe-player';
