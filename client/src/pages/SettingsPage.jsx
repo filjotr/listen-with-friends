@@ -23,25 +23,23 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 md:px-12 pt-24 pb-12 max-w-3xl mx-auto flex flex-col space-y-8 relative">
-      <div className="absolute top-1/4 right-1/4 w-[150px] h-[150px] bg-brandCyan/5 rounded-full blur-[80px] -z-10"></div>
-
+    <div className="min-h-screen px-4 md:px-12 pt-24 pb-12 max-w-3xl mx-auto flex flex-col space-y-8 relative bg-[var(--base-bg)] text-main">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <button
           onClick={() => navigate('/dashboard')}
-          className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-slate-200 transition-colors border border-white/5"
+          className="p-2.5 neumorph-btn rounded-xl text-muted hover:text-brandCyan transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-100">Application Settings</h2>
-          <p className="text-slate-400 text-sm mt-1">Configure audio, voice chat thresholds, and endpoint connection variables</p>
+          <h2 className="text-3xl font-extrabold text-main">Application Settings</h2>
+          <p className="text-muted text-sm mt-1">Configure audio, voice chat thresholds, and endpoint connection variables</p>
         </div>
       </div>
 
       {saved && (
-        <div className="flex items-center space-x-2 text-sm text-green-400 bg-green-500/10 border border-green-500/20 p-4 rounded-xl">
+        <div className="flex items-center space-x-2 text-sm text-green-500 bg-green-500/10 border border-green-500/20 p-4 rounded-xl">
           <span>Settings saved successfully!</span>
         </div>
       )}
@@ -56,7 +54,7 @@ export default function SettingsPage() {
           </h3>
 
           <div className="flex flex-col space-y-2">
-            <div className="flex justify-between text-xs text-slate-400 font-semibold">
+            <div className="flex justify-between text-xs text-muted font-semibold">
               <span>Default Song Volume</span>
               <span>{defaultVolume}%</span>
             </div>
@@ -66,12 +64,12 @@ export default function SettingsPage() {
               max="100"
               value={defaultVolume}
               onChange={(e) => setDefaultVolume(e.target.value)}
-              className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-brandCyan"
+              className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-brandCyan"
             />
           </div>
 
           <div className="flex flex-col space-y-2">
-            <div className="flex justify-between text-xs text-slate-400 font-semibold">
+            <div className="flex justify-between text-xs text-muted font-semibold">
               <span>Buffer Latency Adjustment (ms)</span>
               <span>{latencyOffset}ms</span>
             </div>
@@ -82,15 +80,15 @@ export default function SettingsPage() {
               step="50"
               value={latencyOffset}
               onChange={(e) => setLatencyOffset(e.target.value)}
-              className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-brandCyan"
+              className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-brandCyan"
             />
-            <p className="text-[10px] text-slate-500 leading-relaxed">
+            <p className="text-[10px] text-muted leading-relaxed">
               If your video is consistently out of sync, adjust this offset to shift audio frames.
             </p>
           </div>
         </div>
 
-        <hr className="border-white/5" />
+        <hr className="border-black/5 dark:border-white/5" />
 
         {/* Microphone Settings */}
         <div className="flex flex-col space-y-4">
@@ -100,7 +98,7 @@ export default function SettingsPage() {
           </h3>
 
           <div className="flex flex-col space-y-2">
-            <div className="flex justify-between text-xs text-slate-400 font-semibold">
+            <div className="flex justify-between text-xs text-muted font-semibold">
               <span>Speaking Activation Sensitivity</span>
               <span>{micSensitivity}%</span>
             </div>
@@ -110,15 +108,15 @@ export default function SettingsPage() {
               max="100"
               value={micSensitivity}
               onChange={(e) => setMicSensitivity(e.target.value)}
-              className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-brandPink"
+              className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-brandPink"
             />
-            <p className="text-[10px] text-slate-500 leading-relaxed">
+            <p className="text-[10px] text-muted leading-relaxed">
               Sets the decibel threshold required to light up the speaking indicator card.
             </p>
           </div>
         </div>
 
-        <hr className="border-white/5" />
+        <hr className="border-black/5 dark:border-white/5" />
 
         {/* Network & Endpoints */}
         <div className="flex flex-col space-y-4">
@@ -128,32 +126,32 @@ export default function SettingsPage() {
           </h3>
 
           <div className="flex flex-col space-y-1.5">
-            <label className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">REST API Address</label>
+            <label className="text-[10px] text-muted font-semibold uppercase tracking-wider">REST API Address</label>
             <input
               type="text"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
               disabled
-              className="px-4 py-2.5 rounded-xl glass-input text-xs text-slate-400 cursor-not-allowed bg-slate-900/40"
+              className="px-4 py-2.5 rounded-xl glass-input text-xs text-muted cursor-not-allowed opacity-60 bg-transparent"
             />
           </div>
 
           <div className="flex flex-col space-y-1.5">
-            <label className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Socket Server URL</label>
+            <label className="text-[10px] text-muted font-semibold uppercase tracking-wider">Socket Server URL</label>
             <input
               type="text"
               value={SOCKET_URL}
               disabled
-              className="px-4 py-2.5 rounded-xl glass-input text-xs text-slate-400 cursor-not-allowed bg-slate-900/40"
+              className="px-4 py-2.5 rounded-xl glass-input text-xs text-muted cursor-not-allowed opacity-60 bg-transparent"
             />
           </div>
         </div>
 
         <button
           type="submit"
-          className="w-full py-3.5 bg-gradient-to-r from-brandCyan to-brandPink text-darkBg font-extrabold rounded-xl hover:scale-[1.01] active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 text-sm shadow-lg"
+          className="w-full py-3.5 neumorph-btn text-main font-extrabold rounded-xl active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 text-sm cursor-pointer"
         >
-          <Save className="w-4.5 h-4.5 text-darkBg" />
+          <Save className="w-4.5 h-4.5 text-brandCyan" />
           <span>Save Settings Preferences</span>
         </button>
       </form>

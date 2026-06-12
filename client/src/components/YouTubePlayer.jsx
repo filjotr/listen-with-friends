@@ -226,8 +226,8 @@ export default function YouTubePlayer() {
 
   return (
     <div className="w-full flex flex-col space-y-4">
-      {/* Visualizer Frame */}
-      <div className="relative aspect-video w-full rounded-2xl overflow-hidden glass-panel border-white/5 shadow-glass-glow flex items-center justify-center bg-black/60">
+      {/* Video Container (Sunken Screen effect) */}
+      <div className="relative aspect-video w-full rounded-2xl overflow-hidden glass-input flex items-center justify-center bg-black/10">
         
         {/* Main Video Iframe */}
         <div 
@@ -238,43 +238,43 @@ export default function YouTubePlayer() {
         {/* Empty state overlay */}
         {!currentSong?.videoId && (
           <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 p-6 text-center">
-            <div className="p-4 bg-brandCyan/10 text-brandCyan rounded-full animate-bounce">
-              <Play className="w-8 h-8" />
+            <div className="p-4 neumorph-btn text-brandCyan rounded-full animate-bounce">
+              <Play className="w-8 h-8 fill-brandCyan text-brandCyan" />
             </div>
-            <h4 className="text-lg font-bold text-slate-300">Queue is empty</h4>
-            <p className="text-xs text-slate-500 max-w-xs">
+            <h4 className="text-lg font-bold text-main">Queue is empty</h4>
+            <p className="text-xs text-muted max-w-xs">
               Search a song in the right panel or input a YouTube link to sync music!
             </p>
           </div>
         )}
       </div>
 
-      {/* Spotify Custom controls */}
+      {/* Neumorphic custom controls */}
       {currentSong?.videoId && (
-        <div className="glass-panel p-5 rounded-2xl flex flex-col space-y-4 border-white/5">
+        <div className="glass-panel p-5 rounded-2xl flex flex-col space-y-4">
           {/* Metadata Display */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-slate-800 border border-white/5 overflow-hidden flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 neumorph-btn p-0.5">
                 <img 
                   src={currentSong.thumbnail || `https://img.youtube.com/vi/${currentSong.videoId}/0.jpg`} 
                   alt={currentSong.title} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover rounded-lg" 
                 />
               </div>
               <div className="min-w-0">
-                <h4 className="font-bold text-slate-100 text-sm truncate">{currentSong.title}</h4>
-                <p className="text-xs text-slate-400 truncate mt-0.5">{currentSong.channelTitle}</p>
+                <h4 className="font-bold text-main text-sm truncate">{currentSong.title}</h4>
+                <p className="text-xs text-muted truncate mt-0.5">{currentSong.channelTitle}</p>
               </div>
             </div>
             
-            <div className="text-[10px] text-slate-500 bg-white/5 px-2 py-1 rounded-md font-semibold">
+            <div className="text-[10px] text-muted neumorph-btn px-2.5 py-1.5 rounded-md font-semibold">
               Added by {currentSong.addedBy || 'Host'}
             </div>
           </div>
 
           {/* Timeline Bar */}
-          <div className="flex items-center space-x-3 text-xs text-slate-400">
+          <div className="flex items-center space-x-3 text-xs text-muted">
             <span>{formatTime(activeCurrentTime)}</span>
             <input
               type="range"
@@ -283,9 +283,9 @@ export default function YouTubePlayer() {
               value={progress}
               onChange={handleProgressBarChange}
               disabled={!isHost}
-              className={`flex-1 h-1.5 rounded-full appearance-none outline-none bg-slate-700 cursor-pointer accent-brandCyan ${!isHost && 'opacity-60 pointer-events-none'}`}
+              className={`flex-1 h-1.5 rounded-full appearance-none outline-none cursor-pointer accent-brandCyan ${!isHost && 'opacity-60 pointer-events-none'}`}
               style={{
-                background: `linear-gradient(to right, #00F0FF 0%, #00F0FF ${progress}%, #334155 ${progress}%, #334155 100%)`
+                background: `linear-gradient(to right, var(--accent-cyan) 0%, var(--accent-cyan) ${progress}%, var(--accent-cyan-glow) ${progress}%, var(--accent-cyan-glow) 100%)`
               }}
             />
             <span>{formatTime(activeDuration)}</span>
@@ -298,23 +298,23 @@ export default function YouTubePlayer() {
               <button
                 onClick={handlePlayPause}
                 disabled={!isHost}
-                className={`w-11 h-11 rounded-full flex items-center justify-center text-darkBg bg-gradient-to-tr from-brandCyan to-brandPink shadow-neon-pink hover:scale-105 active:scale-95 transition-transform ${!isHost && 'opacity-50 cursor-not-allowed'}`}
+                className={`w-11 h-11 rounded-full flex items-center justify-center neumorph-btn text-brandCyan hover:scale-105 active:scale-90 transition-transform ${!isHost && 'opacity-50 cursor-not-allowed'}`}
                 title={isHost ? (currentSong.isPlaying ? 'Pause' : 'Play') : 'Host is playing'}
               >
                 {currentSong.isPlaying ? (
-                  <Pause className="w-5 h-5 text-darkBg fill-darkBg" />
+                  <Pause className="w-5 h-5 text-brandCyan fill-brandCyan" />
                 ) : (
-                  <Play className="w-5 h-5 text-darkBg fill-darkBg pl-0.5" />
+                  <Play className="w-5 h-5 text-brandCyan fill-brandCyan pl-0.5" />
                 )}
               </button>
 
               <button
                 onClick={skipSong}
                 disabled={!isHost}
-                className={`p-2.5 rounded-xl border border-white/5 hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-colors ${!isHost && 'opacity-50 cursor-not-allowed'}`}
+                className={`p-3 rounded-xl neumorph-btn text-muted hover:text-brandCyan transition-colors active:scale-90 ${!isHost && 'opacity-50 cursor-not-allowed'}`}
                 title="Skip Track"
               >
-                <SkipForward className="w-4 h-4" />
+                <SkipForward className="w-4.5 h-4.5" />
               </button>
             </div>
 
@@ -322,7 +322,7 @@ export default function YouTubePlayer() {
             <div className="flex items-center space-x-3">
               <button 
                 onClick={toggleLocalMute} 
-                className="p-2 text-slate-400 hover:text-slate-200 transition-colors hover:bg-white/5 rounded-full"
+                className="p-2.5 text-muted hover:text-brandCyan transition-colors neumorph-btn rounded-full flex items-center justify-center cursor-pointer"
               >
                 {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
@@ -333,7 +333,10 @@ export default function YouTubePlayer() {
                 max="100"
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-20 sm:w-28 h-1 bg-slate-700 rounded-full appearance-none cursor-pointer accent-slate-300"
+                className="w-20 sm:w-28 h-1.5 rounded-full appearance-none cursor-pointer accent-slate-500"
+                style={{
+                  background: `linear-gradient(to right, var(--text-muted) 0%, var(--text-muted) ${isMuted ? 0 : volume}%, var(--base-bg) ${isMuted ? 0 : volume}%, var(--base-bg) 100%)`
+                }}
               />
             </div>
           </div>

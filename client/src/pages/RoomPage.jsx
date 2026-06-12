@@ -67,44 +67,38 @@ export default function RoomPage() {
 
   if (!room) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[var(--base-bg)] text-main">
         <div className="w-10 h-10 border-t-2 border-brandCyan rounded-full animate-spin"></div>
-        <span className="text-slate-400 text-sm">Entering synchronized room...</span>
+        <span className="text-muted text-sm">Entering synchronized room...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen px-4 md:px-8 pt-24 pb-12 max-w-7xl mx-auto flex flex-col space-y-6 relative">
-      {/* Background radial meshes */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-1/4 left-1/3 w-[30vw] h-[30vw] bg-brandCyan/5 rounded-full blur-[100px] animate-pulse-slow"></div>
-        <div className="absolute bottom-1/4 right-1/3 w-[30vw] h-[30vw] bg-brandPink/5 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
-      </div>
-
+    <div className="min-h-screen px-4 md:px-8 pt-24 pb-12 max-w-7xl mx-auto flex flex-col space-y-6 relative bg-[var(--base-bg)] text-main">
       {/* Header Panel */}
-      <div className="glass-panel p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between border-white/5 space-y-4 md:space-y-0">
+      <div className="glass-panel p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-slate-200 transition-colors border border-white/5"
+            className="p-2.5 neumorph-btn rounded-xl text-muted hover:text-brandCyan transition-colors cursor-pointer"
             title="Back to Dashboard"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           
           <div>
-            <h2 className="text-xl font-bold text-slate-100 flex items-center space-x-2">
+            <h2 className="text-xl font-bold text-main flex items-center space-x-2">
               <span>{room.name}</span>
               {isHost && (
-                <span className="px-2 py-0.5 bg-brandPink/15 text-brandPink border border-brandPink/10 text-[9px] font-bold rounded-full uppercase flex items-center space-x-1">
-                  <Shield className="w-2.5 h-2.5" />
+                <span className="px-2.5 py-0.5 neumorph-btn text-brandPink text-[9px] font-bold rounded-full uppercase flex items-center space-x-1">
+                  <Shield className="w-2.5 h-2.5 text-brandPink" />
                   <span>Host</span>
                 </span>
               )}
             </h2>
-            <div className="flex items-center text-xs text-slate-400 space-x-2 mt-1">
-              <span className="font-mono bg-white/5 px-1.5 py-0.5 rounded font-bold uppercase text-slate-300">
+            <div className="flex items-center text-xs text-muted space-x-2 mt-1.5">
+              <span className="font-mono neumorph-btn px-2.5 py-0.5 rounded font-bold uppercase text-brandCyan text-xs">
                 {room.code}
               </span>
               <span>•</span>
@@ -119,9 +113,9 @@ export default function RoomPage() {
         {/* Invite link copying */}
         <button
           onClick={handleCopyInvite}
-          className="px-5 py-2.5 bg-brandCyan text-darkBg font-bold text-xs rounded-xl flex items-center space-x-2 shadow-neon-cyan hover:scale-[1.02] active:scale-95 transition-all"
+          className="px-5 py-2.5 neumorph-btn text-brandCyan font-bold text-xs rounded-xl flex items-center space-x-2 active:scale-95 transition-all cursor-pointer"
         >
-          {copied ? <Check className="w-4 h-4 text-darkBg" /> : <Share2 className="w-4 h-4 text-darkBg" />}
+          {copied ? <Check className="w-4 h-4 text-brandCyan" /> : <Share2 className="w-4 h-4 text-brandCyan" />}
           <span>{copied ? 'Link Copied!' : 'Share Room Invite'}</span>
         </button>
       </div>
