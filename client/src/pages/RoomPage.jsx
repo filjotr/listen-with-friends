@@ -24,13 +24,24 @@ export default function RoomPage() {
   } = useRoom();
 
   const [copied, setCopied] = useState(false);
-  const isHost = room?.host?.toString() === user?.id?.toString();
+  const hostId = room?.host?._id || room?.host;
+  const isHost = hostId && user && hostId.toString() === user.id.toString();
 
   // Connect socket and register to room
   useEffect(() => {
     if (!socket || !code) return;
 
-    socket.emit('join-room', { roomCode: code });
+    const joinSession = () => {
+      socket.emit('join-room', { roomCode: code });
+    };
+
+    // Emit immediately if already connected
+    if (socket.connected) {
+      joinSession();
+    }
+
+    // Re-emit automatically when socket reconnects
+    socket.on('connect', joinSession);
 
     // Listen for kick events
     socket.on('kicked-from-room', () => {
@@ -39,6 +50,7 @@ export default function RoomPage() {
     });
 
     return () => {
+      socket.off('connect', joinSession);
       socket.off('kicked-from-room');
       // Perform clean unloads
       leaveRoom();

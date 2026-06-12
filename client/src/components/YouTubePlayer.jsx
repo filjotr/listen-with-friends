@@ -7,7 +7,7 @@ export default function YouTubePlayer() {
   const { room, currentSong, syncMusic, skipSong } = useRoom();
   const { user } = useAuth();
   
-  const hostId = room?.host;
+  const hostId = room?.host?._id || room?.host;
   const isHost = hostId && user && hostId.toString() === user.id.toString();
 
   const playerRef = useRef(null);

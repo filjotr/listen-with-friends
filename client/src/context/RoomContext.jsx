@@ -404,7 +404,8 @@ export const RoomProvider = ({ children }) => {
   };
 
   const syncMusic = (state) => {
-    if (socket && room && room.host === user.id) {
+    const hostId = room?.host?._id || room?.host;
+    if (socket && room && hostId?.toString() === user?.id?.toString()) {
       socket.emit('sync-music', state);
     }
   };
