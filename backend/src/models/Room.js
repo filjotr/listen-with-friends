@@ -25,6 +25,10 @@ const roomSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isChatOnly: {
+    type: Boolean,
+    default: false
+  },
   host: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

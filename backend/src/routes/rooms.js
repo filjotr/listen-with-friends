@@ -97,7 +97,7 @@ const generateRoomCode = () => {
 
 // Create Room
 router.post('/create', authMiddleware, async (req, res) => {
-  const { name, isPrivate, password, isEphemeralChat } = req.body;
+  const { name, isPrivate, password, isEphemeralChat, isChatOnly } = req.body;
   try {
     if (!name) {
       return res.status(400).json({ message: 'Room name is required' });
@@ -116,7 +116,8 @@ router.post('/create', authMiddleware, async (req, res) => {
       name,
       isPrivate: !!isPrivate,
       password: isPrivate ? password : '',
-      isEphemeralChat: !!isEphemeralChat,
+      isEphemeralChat: !!isEphemeralChat || !!isChatOnly,
+      isChatOnly: !!isChatOnly,
       host: req.user._id,
       members: [{ user: req.user._id, role: 'host' }]
     });

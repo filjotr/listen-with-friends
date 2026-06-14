@@ -70,7 +70,9 @@ export default function RoomChat() {
   };
 
   return (
-    <div className="glass-panel rounded-2xl flex flex-col h-[380px] md:h-[450px] overflow-hidden">
+    <div className={`glass-panel rounded-2xl flex flex-col overflow-hidden ${
+      room?.isChatOnly ? 'flex-1 h-full min-h-[450px]' : 'h-[380px] md:h-[450px]'
+    }`}>
       {/* Sidebar Header */}
       <div className="px-5 py-3.5 flex items-center justify-between border-b border-black/5 flex-shrink-0">
         <div className="flex items-center space-x-2">

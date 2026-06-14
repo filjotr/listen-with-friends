@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../utils/config';
-import { Plus, Users, Lock, Unlock, Eye, Sparkles, Clock, Globe, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Plus, Users, Lock, Unlock, Eye, Sparkles, Clock, Globe, ArrowRight, ShieldAlert, MessageSquare } from 'lucide-react';
 
 export default function Dashboard() {
   const { token, user } = useAuth();
@@ -20,6 +20,11 @@ export default function Dashboard() {
   const [createPrivate, setCreatePrivate] = useState(false);
   const [createPassword, setCreatePassword] = useState('');
   const [createEphemeralChat, setCreateEphemeralChat] = useState(false);
+
+  // Chat Room inputs
+  const [chatRoomName, setChatRoomName] = useState('');
+  const [chatRoomPrivate, setChatRoomPrivate] = useState(false);
+  const [chatRoomPassword, setChatRoomPassword] = useState('');
 
   // Password Overlay Modal
   const [joiningCode, setJoiningCode] = useState(null);
@@ -96,6 +101,42 @@ export default function Dashboard() {
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Failed to create room');
+      }
+
+      // Redirect immediately to room page
+      navigate(`/room/${data.room.code}`);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Create Chat Room handler
+  const handleCreateChatRoom = async (e) => {
+    e.preventDefault();
+    if (!chatRoomName.trim()) {
+      setError('Please provide a name for your chat room');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/rooms/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: chatRoomName,
+          isPrivate: chatRoomPrivate,
+          password: chatRoomPrivate ? chatRoomPassword : '',
+          isEphemeralChat: true,
+          isChatOnly: true
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to create chat room');
       }
 
       // Redirect immediately to room page
@@ -334,6 +375,66 @@ export default function Dashboard() {
               </button>
             </form>
           </div>
+
+          {/* Create Standalone Chat Room */}
+          <div className="glass-panel p-6 rounded-3xl flex flex-col space-y-4">
+            <h3 className="text-lg font-bold text-main flex items-center space-x-2">
+              <MessageSquare className="w-4 h-4 text-brandCyan" />
+              <span>Create Private Chat</span>
+            </h3>
+            <form onSubmit={handleCreateChatRoom} className="space-y-4">
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs text-muted font-medium">Chat Name</label>
+                <input
+                  type="text"
+                  placeholder="Secret Room"
+                  value={chatRoomName}
+                  onChange={(e) => setChatRoomName(e.target.value)}
+                  className="px-4 py-2 rounded-xl glass-input text-sm text-main"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-sm text-muted font-medium">Private Room?</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={chatRoomPrivate}
+                    onChange={(e) => setChatRoomPrivate(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-350 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brandCyan"></div>
+                </label>
+              </div>
+
+              {chatRoomPrivate && (
+                <div className="flex flex-col space-y-1 animate-fadeIn">
+                  <label className="text-xs text-muted font-medium flex items-center space-x-1">
+                    <Lock className="w-3 h-3" />
+                    <span>Password</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={chatRoomPassword}
+                    onChange={(e) => setChatRoomPassword(e.target.value)}
+                    className="px-4 py-2 rounded-xl glass-input text-sm text-main"
+                  />
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted leading-normal mt-0.5">
+                WhatsApp-style chat room. Messages are in-memory (ephemeral) and voice is End-to-End Encrypted (E2EE). No music player.
+              </p>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 neumorph-btn text-brandCyan font-bold rounded-xl active:scale-95 transition-all duration-200 cursor-pointer"
+              >
+                Create Chat Room
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Right column: Room Listings */}
@@ -364,10 +465,19 @@ export default function Dashboard() {
                   >
                     <div>
                       <div className="flex justify-between items-start">
-                        <h4 className="font-bold text-main text-sm truncate max-w-[80%]">{room.name}</h4>
-                        <span className="px-2.5 py-0.5 text-[10px] neumorph-btn text-brandCyan font-bold rounded-full uppercase">
-                          {room.code}
-                        </span>
+                        <h4 className="font-bold text-main text-sm truncate max-w-[60%]">{room.name}</h4>
+                        <div className="flex space-x-1.5 items-center">
+                          <span className={`px-1.5 py-0.5 text-[8px] rounded font-bold uppercase ${
+                            room.isChatOnly 
+                              ? 'bg-brandCyan/10 text-brandCyan border border-brandCyan/20' 
+                              : 'bg-brandPink/10 text-brandPink border border-brandPink/20'
+                          }`}>
+                            {room.isChatOnly ? 'Chat' : 'Music'}
+                          </span>
+                          <span className="px-2.5 py-0.5 text-[10px] neumorph-btn text-brandCyan font-bold rounded-full uppercase">
+                            {room.code}
+                          </span>
+                        </div>
                       </div>
                       <p className="text-xs text-muted mt-1">Host: {room.host?.username || 'Unknown'}</p>
                     </div>

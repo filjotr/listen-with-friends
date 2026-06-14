@@ -121,26 +121,42 @@ export default function RoomPage() {
       </div>
 
       {/* Main Feature Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Player & Voice Status */}
-        <div className="lg:col-span-2 flex flex-col space-y-6">
-          <YouTubePlayer />
-          <VoiceChat />
-          {isHost && <AdminControls />}
-        </div>
-
-        {/* Right Column: Karaoke & Playlist queues */}
-        <div className="lg:col-span-1 flex flex-col md:flex-row lg:flex-col gap-6">
-          <div className="flex-1 min-w-0">
-            <KaraokeLyrics />
+      {room.isChatOnly ? (
+        /* Standalone Private Chat Layout (WhatsApp style) */
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch flex-1 min-h-[calc(100vh-280px)]">
+          {/* E2EE Voice Chat list - taking 1 column in lg, or stacked on mobile */}
+          <div className="lg:col-span-1 flex flex-col justify-start">
+            <VoiceChat />
           </div>
 
-          <div className="flex-1 min-w-0 flex flex-col space-y-6">
-            <SongQueue />
+          {/* Epic full height Room Chat - taking 3 columns in lg, or stacked on mobile */}
+          <div className="lg:col-span-3 flex flex-col h-full min-h-[450px]">
             <RoomChat />
           </div>
         </div>
-      </div>
+      ) : (
+        /* Standard Music Synchronization Layout */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Player & Voice Status */}
+          <div className="lg:col-span-2 flex flex-col space-y-6">
+            <YouTubePlayer />
+            <VoiceChat />
+            {isHost && <AdminControls />}
+          </div>
+
+          {/* Right Column: Karaoke & Playlist queues */}
+          <div className="lg:col-span-1 flex flex-col md:flex-row lg:flex-col gap-6">
+            <div className="flex-1 min-w-0">
+              <KaraokeLyrics />
+            </div>
+
+            <div className="flex-1 min-w-0 flex flex-col space-y-6">
+              <SongQueue />
+              <RoomChat />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
