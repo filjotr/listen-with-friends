@@ -20,8 +20,18 @@ const checkMongoPort = () => {
 };
 
 async function start() {
-  const isMongoOpen = await checkMongoPort();
-  if (!isMongoOpen) {
+  const mongoUri = process.env.MONGO_URI || '';
+  const isLocal = mongoUri.includes('127.0.0.1') || mongoUri.includes('localhost') || !mongoUri;
+
+  let useMock = false;
+  if (isLocal) {
+    const isMongoOpen = await checkMongoPort();
+    if (!isMongoOpen) {
+      useMock = true;
+    }
+  }
+
+  if (useMock) {
     console.log('------------------------------------------------------------');
     console.log('MongoDB port 27017 is offline. Loading in-memory Mongoose mock...');
     console.log('------------------------------------------------------------');
@@ -35,7 +45,7 @@ async function start() {
     };
   } else {
     console.log('------------------------------------------------------------');
-    console.log('MongoDB port 27017 is online. Connecting to real database...');
+    console.log('Connecting to real database...');
     console.log('------------------------------------------------------------');
   }
   
