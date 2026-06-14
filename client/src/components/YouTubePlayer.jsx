@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRoom } from '../context/RoomContext';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../utils/config';
 import { Play, Pause, SkipForward, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
 
 export default function YouTubePlayer() {
-  const { room, currentSong, syncMusic, skipSong } = useRoom();
-  const { user } = useAuth();
+  const { room, currentSong, syncMusic, skipSong, queue, addToQueue } = useRoom();
+  const { user, token } = useAuth();
   
   const hostId = room?.host?._id || room?.host;
   const userId = user?._id || user?.id;
@@ -15,6 +16,7 @@ export default function YouTubePlayer() {
   const containerId = 'youtube-iframe-player';
   const syncIntervalRef = useRef(null);
   const preventLoopRef = useRef(false);
+  const endingSongRef = useRef(null);
 
   const [ready, setReady] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -91,6 +93,15 @@ export default function YouTubePlayer() {
     syncToRoomState(currentSong, playerRef.current);
   }, [currentSong, ready]);
 
+  // Reset endingSongRef when a new video starts playing
+  useEffect(() => {
+    if (currentSong?.videoId) {
+      if (endingSongRef.current !== currentSong.videoId) {
+        endingSongRef.current = null;
+      }
+    }
+  }, [currentSong?.videoId]);
+
   // Synchronize Player object with currentSong state
   const syncToRoomState = (songState, player) => {
     if (!player || typeof player.getPlayerState !== 'function') return;
@@ -148,9 +159,55 @@ export default function YouTubePlayer() {
           });
         }
       }, 1000);
+    } else if (state === window.YT.PlayerState.ENDED) {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+      }
+      if (isHost) {
+        handleSongEnded();
+      }
     } else {
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
+      }
+    }
+  };
+
+  // Autoplay next song from queue or a related track from YouTube search
+  const handleSongEnded = async () => {
+    if (!isHost || !currentSong?.videoId) return;
+
+    // Prevent duplicate triggers for the same video ID
+    if (endingSongRef.current === currentSong.videoId) return;
+    endingSongRef.current = currentSong.videoId;
+
+    if (queue && queue.length > 0) {
+      // If there are songs in queue, skip to the next
+      skipSong();
+    } else {
+      // Non-stop music (YouTube Music style autoplay)
+      try {
+        // First skip/stop current song to broadcast empty state
+        skipSong();
+
+        const searchQuery = currentSong.channelTitle || currentSong.title;
+        if (!searchQuery) return;
+
+        const res = await fetch(`${API_BASE_URL}/rooms/search-yt?q=${encodeURIComponent(searchQuery)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.results && data.results.length > 0) {
+          // Find the first result that is not the same video ID
+          const nextOption = data.results.find(v => v.videoId !== currentSong.videoId) || data.results[0];
+          if (nextOption) {
+            // Automatically add to queue, which plays immediately
+            addToQueue(nextOption);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to autoplay next related song:', err);
       }
     }
   };

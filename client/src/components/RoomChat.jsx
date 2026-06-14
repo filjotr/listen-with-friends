@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRoom } from '../context/RoomContext';
 import { useAuth } from '../context/AuthContext';
-import { Send, Smile, Info } from 'lucide-react';
+import { Send, Smile, Info, Image, Lock, X } from 'lucide-react';
 
 export default function RoomChat() {
-  const { chatMessages, sendMessage } = useRoom();
+  const { room, chatMessages, sendMessage } = useRoom();
   const { user } = useAuth();
   
   const [inputText, setInputText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   const chatBottomRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const popularEmojis = ['😂', '🔥', '❤️', '👍', '😮', '🎤', '🎉', '🎵', '🚀', '👑'];
 
@@ -32,6 +33,33 @@ export default function RoomChat() {
     setInputText(prev => prev + emoji);
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file!');
+      return;
+    }
+
+    if (file.size > 1.5 * 1024 * 1024) { // Limit size to 1.5MB to avoid socket payload overflow
+      alert('Image size should be less than 1.5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Send base64 representation directly as the message text
+      sendMessage(reader.result);
+    };
+    reader.onerror = (err) => {
+      console.error('Error reading image:', err);
+    };
+    reader.readAsDataURL(file);
+    // Reset file input value
+    e.target.value = null;
+  };
+
   const formatMessageTime = (dateStr) => {
     try {
       const date = new Date(dateStr);
@@ -44,9 +72,20 @@ export default function RoomChat() {
   return (
     <div className="glass-panel rounded-2xl flex flex-col h-[380px] md:h-[450px] overflow-hidden">
       {/* Sidebar Header */}
-      <div className="px-5 py-3.5 flex items-center space-x-2 flex-shrink-0">
-        <span className="w-2.5 h-2.5 rounded-full bg-brandCyan animate-ping"></span>
-        <h3 className="font-bold text-main text-sm">Room Chat</h3>
+      <div className="px-5 py-3.5 flex items-center justify-between border-b border-black/5 flex-shrink-0">
+        <div className="flex items-center space-x-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-brandCyan animate-ping"></span>
+          <h3 className="font-bold text-main text-sm">Room Chat</h3>
+        </div>
+        {room?.isEphemeralChat && (
+          <div 
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-full neumorph-btn text-brandPink text-[9.5px] font-bold uppercase cursor-help"
+            title="Private Ephemeral Chat: Messages are NOT stored anywhere and disappear when you leave the room."
+          >
+            <Lock className="w-3 h-3 text-brandPink" />
+            <span>Private</span>
+          </div>
+        )}
       </div>
 
       {/* Message history */}
@@ -73,6 +112,8 @@ export default function RoomChat() {
               );
             }
 
+            const isImage = msg.text && msg.text.startsWith('data:image/');
+
             return (
               <div 
                 key={msg._id} 
@@ -91,7 +132,21 @@ export default function RoomChat() {
                       : 'glass-input text-main rounded-tl-none'
                   }`}
                 >
-                  {msg.text}
+                  {isImage ? (
+                    <img 
+                      src={msg.text} 
+                      alt="Shared payload" 
+                      className="max-w-[180px] max-h-[180px] rounded-lg object-contain cursor-zoom-in hover:scale-[1.03] transition-transform" 
+                      onClick={() => {
+                        const newTab = window.open();
+                        if (newTab) {
+                          newTab.document.write(`<img src="${msg.text}" style="max-width:100%; max-height:100%; display:block; margin:auto;" />`);
+                        }
+                      }}
+                    />
+                  ) : (
+                    msg.text
+                  )}
                 </div>
               </div>
             );
@@ -116,7 +171,7 @@ export default function RoomChat() {
       )}
 
       {/* Message input */}
-      <form onSubmit={handleSend} className="p-3 flex items-center space-x-2 bg-transparent flex-shrink-0">
+      <form onSubmit={handleSend} className="p-3 flex items-center space-x-2 bg-transparent flex-shrink-0 border-t border-black/5">
         <button
           type="button"
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -125,9 +180,26 @@ export default function RoomChat() {
               ? 'neumorph-btn text-brandCyan' 
               : 'text-muted hover:text-brandCyan'
           }`}
+          title="Add Emoji"
         >
           <Smile className="w-4 h-4" />
         </button>
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2.5 rounded-xl text-muted hover:text-brandCyan transition-all cursor-pointer"
+          title="Send Image"
+        >
+          <Image className="w-4 h-4" />
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageUpload}
+          accept="image/*"
+          className="hidden"
+        />
 
         <input
           type="text"

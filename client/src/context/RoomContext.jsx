@@ -38,11 +38,18 @@ export const RoomProvider = ({ children }) => {
 
   const localStreamRef = useRef(null);
   const peersRef = useRef({}); // socketId -> RTCPeerConnection
+  const pendingCandidatesRef = useRef({});
+  const voiceJoinedRef = useRef(voiceJoined);
+
+  useEffect(() => {
+    voiceJoinedRef.current = voiceJoined;
+  }, [voiceJoined]);
 
   // Reset room state on unload/unmount
   const leaveRoom = () => {
     // 1. Leave Voice Chat first
     leaveVoiceChat();
+    pendingCandidatesRef.current = {};
     // 2. Clear Context States
     setRoom(null);
     setMembers([]);
@@ -146,6 +153,21 @@ export const RoomProvider = ({ children }) => {
       }
       return m;
     }));
+  };
+
+  const processPendingCandidates = async (socketId, peer) => {
+    const candidates = pendingCandidatesRef.current[socketId] || [];
+    console.log(`Processing ${candidates.length} pending candidates for ${socketId}`);
+    for (const candidate of candidates) {
+      try {
+        if (candidate) {
+          await peer.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+      } catch (err) {
+        console.error(`Error adding pending candidate for ${socketId}:`, err);
+      }
+    }
+    delete pendingCandidatesRef.current[socketId];
   };
 
   // Create WebRTC Peer connection
@@ -260,7 +282,7 @@ export const RoomProvider = ({ children }) => {
       setMembers(members);
       
       // If we are in the voice chat, we must initiate a WebRTC connection to this new user
-      if (voiceJoined && user.socketId !== socket.id) {
+      if (voiceJoinedRef.current && user.socketId !== socket.id) {
         // We establish a connection immediately, indicating we are the initiator (offer generator)
         createPeerConnection(user.socketId, true);
       }
@@ -294,7 +316,7 @@ export const RoomProvider = ({ children }) => {
     // WebRTC signaling receiver
     socket.on('webrtc-signal', async ({ from, signal }) => {
       // If we're not in voice, ignore
-      if (!voiceJoined) return;
+      if (!voiceJoinedRef.current) return;
 
       try {
         let peer = peersRef.current[from];
@@ -303,6 +325,7 @@ export const RoomProvider = ({ children }) => {
           // If connection doesn't exist, create it (we are NOT the initiator)
           peer = createPeerConnection(from, false);
           await peer.setRemoteDescription(new RTCSessionDescription(signal));
+          await processPendingCandidates(from, peer);
           const answer = await peer.createAnswer();
           await peer.setLocalDescription(answer);
           
@@ -314,11 +337,18 @@ export const RoomProvider = ({ children }) => {
         else if (signal.type === 'answer') {
           if (peer) {
             await peer.setRemoteDescription(new RTCSessionDescription(signal));
+            await processPendingCandidates(from, peer);
           }
         } 
         else if (signal.type === 'candidate') {
-          if (peer) {
+          if (peer && peer.remoteDescription) {
             await peer.addIceCandidate(new RTCIceCandidate(signal.candidate));
+          } else {
+            // Queue candidate
+            if (!pendingCandidatesRef.current[from]) {
+              pendingCandidatesRef.current[from] = [];
+            }
+            pendingCandidatesRef.current[from].push(signal.candidate);
           }
         }
       } catch (err) {
@@ -336,7 +366,7 @@ export const RoomProvider = ({ children }) => {
       }));
 
       // If we are already in voice, initiate connection to them
-      if (voiceJoined && socketId !== socket.id) {
+      if (voiceJoinedRef.current && socketId !== socket.id) {
         createPeerConnection(socketId, true);
       }
     });
@@ -391,7 +421,7 @@ export const RoomProvider = ({ children }) => {
       socket.off('host-transferred');
       socket.off('error-msg');
     };
-  }, [socket, voiceJoined]);
+  }, [socket]);
 
   // ----------------------------------------------------
   // Emitting Actions Wrapper

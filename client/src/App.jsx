@@ -54,7 +54,7 @@ function GuestRoute({ children }) {
 
 export default function App() {
   return (
-    <Router>
+    <Router basename="/listen-with-friends">
       <AuthProvider>
         <SocketProvider>
           <RoomProvider>

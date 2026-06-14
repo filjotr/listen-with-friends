@@ -1,7 +1,26 @@
 import React, { useEffect, useRef } from 'react';
 import { useRoom } from '../context/RoomContext';
 import { useSocket } from '../context/SocketContext';
-import { Mic, MicOff, Phone, PhoneOff, Users } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Users, ShieldCheck } from 'lucide-react';
+
+function RemoteAudio({ stream }) {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioRef.current && stream) {
+      audioRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return (
+    <audio 
+      ref={audioRef}
+      autoPlay
+      controls={false}
+      className="hidden"
+    />
+  );
+}
 
 export default function VoiceChat() {
   const socket = useSocket();
@@ -14,8 +33,6 @@ export default function VoiceChat() {
     toggleMute, 
     remoteStreams 
   } = useRoom();
-
-  const audioRefs = useRef({});
 
   // speaking volume detection (simple visual indicator)
   useEffect(() => {
@@ -71,17 +88,6 @@ export default function VoiceChat() {
     };
   }, [voiceJoined, socket]);
 
-  // Handle remote audio tag attachment
-  useEffect(() => {
-    Object.keys(remoteStreams).forEach(socketId => {
-      const stream = remoteStreams[socketId];
-      const audioElement = audioRefs.current[socketId];
-      if (audioElement && stream) {
-        audioElement.srcObject = stream;
-      }
-    });
-  }, [remoteStreams]);
-
   return (
     <div className="glass-panel p-5 rounded-2xl flex flex-col space-y-4">
       {/* Header */}
@@ -89,6 +95,13 @@ export default function VoiceChat() {
         <div className="flex items-center space-x-2">
           <Users className="w-4 h-4 text-brandCyan" />
           <h3 className="font-bold text-main text-sm">Room Voice Chat</h3>
+          <div 
+            className="flex items-center space-x-0.5 px-1.5 py-0.5 rounded-full neumorph-btn text-brandCyan text-[8px] font-bold uppercase cursor-help"
+            title="Voice chat is end-to-end encrypted (E2EE) using WebRTC P2P DTLS/SRTP encryption."
+          >
+            <ShieldCheck className="w-2.5 h-2.5 text-brandCyan" />
+            <span>E2EE</span>
+          </div>
         </div>
         
         <span className="px-2.5 py-1.5 neumorph-btn text-[10px] text-brandCyan font-bold rounded-full uppercase">
@@ -140,12 +153,7 @@ export default function VoiceChat() {
 
               {/* Render remote peer hidden audio players */}
               {!isMe && member.isVoiceJoined && remoteStreams[member.socketId] && (
-                <audio 
-                  ref={el => audioRefs.current[member.socketId] = el}
-                  autoPlay
-                  controls={false}
-                  className="hidden"
-                />
+                <RemoteAudio stream={remoteStreams[member.socketId]} />
               )}
             </div>
           );

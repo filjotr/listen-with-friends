@@ -21,6 +21,10 @@ const roomSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  isEphemeralChat: {
+    type: Boolean,
+    default: false
+  },
   host: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

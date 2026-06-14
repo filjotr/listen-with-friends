@@ -86,12 +86,15 @@ module.exports = (io) => {
           members: Object.values(activeRooms[code].users)
         });
 
-        // Load recent chat messages
-        const messages = await Message.find({ room: room._id })
-          .sort({ timestamp: -1 })
-          .limit(50);
-        
-        socket.emit('chat-history', messages.reverse());
+        // Load recent chat messages (skip database fetch if ephemeral)
+        if (room.isEphemeralChat) {
+          socket.emit('chat-history', []);
+        } else {
+          const messages = await Message.find({ room: room._id })
+            .sort({ timestamp: -1 })
+            .limit(50);
+          socket.emit('chat-history', messages.reverse());
+        }
 
       } catch (err) {
         console.error('Socket join-room error:', err);
@@ -106,19 +109,35 @@ module.exports = (io) => {
         const room = await Room.findOne({ code: currentRoomCode });
         if (!room) return;
 
-        const message = new Message({
-          room: room._id,
-          sender: {
-            userId: user._id,
-            username: user.username,
-            avatar: user.avatar
-          },
-          text
-        });
+        if (room.isEphemeralChat) {
+          // Ephemeral chat: broadcast in-memory transient message without database saving
+          const tempMessage = {
+            _id: `temp-${Date.now()}-${Math.random()}`,
+            room: room._id,
+            sender: {
+              userId: user._id,
+              username: user.username,
+              avatar: user.avatar
+            },
+            text,
+            timestamp: new Date()
+          };
+          io.to(currentRoomCode).emit('new-message', tempMessage);
+        } else {
+          const message = new Message({
+            room: room._id,
+            sender: {
+              userId: user._id,
+              username: user.username,
+              avatar: user.avatar
+            },
+            text
+          });
 
-        await message.save();
+          await message.save();
 
-        io.to(currentRoomCode).emit('new-message', message);
+          io.to(currentRoomCode).emit('new-message', message);
+        }
       } catch (err) {
         console.error('Send message error:', err);
       }

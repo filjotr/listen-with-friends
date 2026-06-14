@@ -5,6 +5,85 @@ const Room = require('../models/Room');
 const RoomActivity = require('../models/RoomActivity');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const https = require('https');
+
+// Helper to scrape YouTube Search Results (no API key needed)
+const searchYouTube = (query) => {
+  return new Promise((resolve, reject) => {
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%253D%253D`;
+    const options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    };
+
+    https.get(url, options, (res) => {
+      let html = '';
+      res.on('data', (chunk) => { html += chunk; });
+      res.on('end', () => {
+        try {
+          const match = html.match(/ytInitialData\s*=\s*({.+?});/);
+          if (!match) return resolve([]);
+          
+          const data = JSON.parse(match[1]);
+          const contents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents;
+          if (!contents) return resolve([]);
+          
+          const results = [];
+          for (const item of contents) {
+            if (item.videoRenderer) {
+              const video = item.videoRenderer;
+              const videoId = video.videoId;
+              const title = video.title?.runs?.[0]?.text || video.title?.simpleText;
+              const channelTitle = video.ownerText?.runs?.[0]?.text;
+              const thumbnail = video.thumbnail?.thumbnails?.[0]?.url;
+              
+              const lengthText = video.lengthText?.simpleText || "";
+              let duration = 180;
+              if (lengthText) {
+                const parts = lengthText.split(':').map(Number);
+                if (parts.length === 2) duration = parts[0] * 60 + parts[1];
+                else if (parts.length === 3) duration = parts[0] * 3600 + parts[1] * 60 + parts[2];
+              }
+              
+              if (videoId && title) {
+                results.push({
+                  videoId,
+                  title,
+                  channelTitle: channelTitle || 'Unknown Artist',
+                  thumbnail: thumbnail || `https://img.youtube.com/vi/${videoId}/0.jpg`,
+                  duration
+                });
+              }
+            }
+            if (results.length >= 8) break;
+          }
+          resolve(results);
+        } catch (err) {
+          resolve([]); // Fallback to empty results on parse error
+        }
+      });
+    }).on('error', (err) => {
+      resolve([]);
+    });
+  });
+};
+
+// Search YouTube
+router.get('/search-yt', authMiddleware, async (req, res) => {
+  const { q } = req.query;
+  if (!q) {
+    return res.status(400).json({ message: 'Query parameter q is required' });
+  }
+  try {
+    const results = await searchYouTube(q);
+    res.json({ results });
+  } catch (err) {
+    console.error('Search error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch search results' });
+  }
+});
 
 // Helper to generate unique room code (e.g. ABCD-123)
 const generateRoomCode = () => {
@@ -18,7 +97,7 @@ const generateRoomCode = () => {
 
 // Create Room
 router.post('/create', authMiddleware, async (req, res) => {
-  const { name, isPrivate, password } = req.body;
+  const { name, isPrivate, password, isEphemeralChat } = req.body;
   try {
     if (!name) {
       return res.status(400).json({ message: 'Room name is required' });
@@ -37,6 +116,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       name,
       isPrivate: !!isPrivate,
       password: isPrivate ? password : '',
+      isEphemeralChat: !!isEphemeralChat,
       host: req.user._id,
       members: [{ user: req.user._id, role: 'host' }]
     });

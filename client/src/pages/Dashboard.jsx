@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [createName, setCreateName] = useState('');
   const [createPrivate, setCreatePrivate] = useState(false);
   const [createPassword, setCreatePassword] = useState('');
+  const [createEphemeralChat, setCreateEphemeralChat] = useState(false);
 
   // Password Overlay Modal
   const [joiningCode, setJoiningCode] = useState(null);
@@ -87,7 +88,8 @@ export default function Dashboard() {
         body: JSON.stringify({
           name: createName,
           isPrivate: createPrivate,
-          password: createPrivate ? createPassword : ''
+          password: createPrivate ? createPassword : '',
+          isEphemeralChat: createEphemeralChat
         })
       });
 
@@ -288,6 +290,24 @@ export default function Dashboard() {
                   />
                   <div className="w-11 h-6 bg-slate-350 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brandPink"></div>
                 </label>
+              </div>
+
+              <div className="flex flex-col space-y-1 pt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted font-medium">Ephemeral Chat?</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={createEphemeralChat}
+                      onChange={(e) => setCreateEphemeralChat(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-350 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brandCyan"></div>
+                  </label>
+                </div>
+                <p className="text-[10px] text-muted leading-normal mt-0.5">
+                  When enabled, chat messages are transient in-memory and will never be saved to any database. They are fully cleared once you leave.
+                </p>
               </div>
 
               {createPrivate && (

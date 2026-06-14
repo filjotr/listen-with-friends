@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useRoom } from '../context/RoomContext';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../utils/config';
 import { popularSongs } from '../utils/popularSongs';
-import { Search, Plus, Trash2, ListMusic, Link, Compass } from 'lucide-react';
+import { Search, Plus, Trash2, ListMusic, Link, Compass, Loader2, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function SongQueue() {
-  const { queue, addToQueue, removeFromQueue, room } = useRoom();
+  const { queue, addToQueue, removeFromQueue } = useRoom();
+  const { token } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [customUrl, setCustomUrl] = useState('');
   const [activeTab, setActiveTab] = useState('queue'); // 'queue' or 'search'
-
-  // Curated search results filtering
-  const filteredPopularSongs = popularSongs.filter(song => 
-    song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    song.channelTitle.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
 
   // Custom link parser helper
   const handleCustomLinkSubmit = (e) => {
@@ -27,7 +29,6 @@ export default function SongQueue() {
     if (match && match[2].length === 11) {
       const videoId = match[2];
       
-      // Parse a nice custom title from URL if possible, or give a default
       const songObj = {
         videoId,
         title: `YouTube Track (${videoId})`,
@@ -44,6 +45,33 @@ export default function SongQueue() {
     }
   };
 
+  const handleSearchSubmit = async (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setSearching(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/rooms/search-yt?q=${encodeURIComponent(searchQuery)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSearchResults(data.results || []);
+        setHasSearched(true);
+      }
+    } catch (err) {
+      console.error('YouTube search error:', err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setHasSearched(false);
+  };
+
   const handleAddPopular = (song) => {
     addToQueue(song);
     setActiveTab('queue');
@@ -54,6 +82,9 @@ export default function SongQueue() {
     const s = secs % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
+
+  // Get display songs (searched results or preset fallbacks)
+  const displaySongs = hasSearched ? searchResults : popularSongs;
 
   return (
     <div className="glass-panel rounded-2xl flex flex-col h-[380px] md:h-[450px] overflow-hidden">
@@ -132,50 +163,95 @@ export default function SongQueue() {
           )
         ) : (
           /* Search / Add Panel */
-          <div className="space-y-5 flex flex-col h-full">
-            {/* Custom URL Input */}
-            <form onSubmit={handleCustomLinkSubmit} className="flex flex-col space-y-1.5 flex-shrink-0">
-              <label className="text-[10px] text-muted font-semibold uppercase tracking-wider flex items-center space-x-1">
-                <Link className="w-3.5 h-3.5 text-brandPink" />
-                <span>Paste YouTube Link</span>
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
-                  className="flex-1 px-3 py-2 text-xs rounded-xl glass-input text-main"
-                />
-                <button
-                  type="submit"
-                  className="px-4 neumorph-btn text-brandPink font-bold rounded-xl text-xs active:scale-95 transition-all cursor-pointer"
-                >
-                  Add
-                </button>
-              </div>
-            </form>
-
-            {/* Popular Songs Directory Search */}
-            <div className="flex flex-col space-y-3 flex-1 overflow-hidden">
-              <label className="text-[10px] text-muted font-semibold uppercase tracking-wider flex items-center space-x-1">
-                <Search className="w-3.5 h-3.5 text-brandCyan" />
-                <span>Search Popular Tracks</span>
+          <div className="space-y-4 flex flex-col h-full">
+            {/* Primary YouTube Search */}
+            <div className="flex flex-col space-y-2 flex-shrink-0">
+              <label className="text-[10px] text-muted font-semibold uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center space-x-1">
+                  <Search className="w-3.5 h-3.5 text-brandCyan" />
+                  <span>Search YouTube</span>
+                </span>
+                {hasSearched && (
+                  <button 
+                    onClick={handleClearSearch}
+                    className="text-brandPink hover:underline flex items-center space-x-0.5 cursor-pointer font-bold lowercase"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Clear</span>
+                  </button>
+                )}
               </label>
               
-              <input
-                type="text"
-                placeholder="Search songs or artists..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl glass-input mb-2 flex-shrink-0 text-main"
-              />
+              <form onSubmit={handleSearchSubmit} className="flex space-x-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search songs, artists, channels..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2.5 pr-8 text-xs rounded-xl glass-input text-main"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-brandPink cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 neumorph-btn text-brandCyan font-bold rounded-xl text-xs flex items-center justify-center cursor-pointer active:scale-95"
+                >
+                  {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                </button>
+              </form>
+            </div>
 
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {filteredPopularSongs.length === 0 ? (
-                  <p className="text-center text-muted text-xs py-4">No matching popular tracks found</p>
+            {/* Collapsible Direct URL Input */}
+            <div className="flex flex-col flex-shrink-0 border-t border-black/5 pt-3">
+              <button
+                type="button"
+                onClick={() => setShowLinkInput(!showLinkInput)}
+                className="text-[10px] text-muted font-bold flex items-center space-x-1 hover:text-brandPink transition-colors focus:outline-none cursor-pointer self-start"
+              >
+                <Link className="w-3.5 h-3.5 text-brandPink" />
+                <span>Or add by direct YouTube URL</span>
+                {showLinkInput ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+
+              {showLinkInput && (
+                <form onSubmit={handleCustomLinkSubmit} className="flex space-x-2 mt-2">
+                  <input
+                    type="text"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    className="flex-1 px-3 py-2 text-xs rounded-xl glass-input text-main"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 neumorph-btn text-brandPink font-bold rounded-xl text-xs active:scale-95 transition-all cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* Songs List */}
+            <div className="flex flex-col space-y-2.5 flex-1 overflow-hidden border-t border-black/5 pt-3">
+              <label className="text-[10px] text-muted font-semibold uppercase tracking-wider">
+                {hasSearched ? 'Search Results' : 'Featured Presets'}
+              </label>
+
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                {displaySongs.length === 0 ? (
+                  <p className="text-center text-muted text-xs py-6">No matching tracks found</p>
                 ) : (
-                  filteredPopularSongs.map((song) => (
+                  displaySongs.map((song) => (
                     <div 
                       key={song.videoId} 
                       className="p-3 glass-panel rounded-xl flex items-center justify-between transition-all"
@@ -192,7 +268,7 @@ export default function SongQueue() {
 
                       <button
                         onClick={() => handleAddPopular(song)}
-                        className="p-2 neumorph-btn text-brandCyan rounded-lg transition-all cursor-pointer active:scale-95"
+                        className="p-2 neumorph-btn text-brandCyan rounded-lg transition-all cursor-pointer active:scale-95 hover:scale-105"
                         title="Add to queue"
                       >
                         <Plus className="w-3.5 h-3.5" />
